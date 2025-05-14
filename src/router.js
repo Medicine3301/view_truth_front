@@ -5,7 +5,6 @@ import Register from './components/Register.vue'
 import Userprofile from './components/Userprofile.vue'
 import Community from './components/community.vue'
 import Post from './components/post.vue'
-import News from './components/newhome.vue'
 import Newspage from './components/newspage.vue'
 import AdminUserManagement from './components/AdminUserManagement.vue'
 import HotNewsList from './components/HotNewsList.vue'
@@ -20,12 +19,6 @@ const routes = [
         path: '/register', 
         component: Register, 
         name: 'register',
-        meta: { requiresAuth: false }
-    },
-    { 
-        path: '/news', 
-        component: News, 
-        name: 'news',
         meta: { requiresAuth: false }
     },
     { 

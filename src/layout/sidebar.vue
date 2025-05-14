@@ -7,12 +7,6 @@
         <HomeOutlined />
         <span class="nav-text">首頁</span>
       </a-menu-item>
-      <a-menu-item key="2">
-        <router-link to="/news">
-          <VideoCameraOutlined />
-          <span class="nav-text">網路內容分析</span>
-        </router-link>
-      </a-menu-item>
 
       <a-menu-item key="3">
         <router-link to="/hotnewslist">
