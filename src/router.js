@@ -8,6 +8,8 @@ import Post from './components/post.vue'
 import Newspage from './components/newspage.vue'
 import AdminUserManagement from './components/AdminUserManagement.vue'
 import HotNewsList from './components/HotNewsList.vue'
+import WebsiteAnalytics from './components/WebsiteAnalytics.vue'
+import ContentAnalysisManagement from './components/ContentAnalysisManagement.vue'
 const routes = [
     { 
         path: '/', 
@@ -57,7 +59,18 @@ const routes = [
         name: 'adminusermanagement',
         meta: { requiresAuth: true, requiresAdmin: true }
     },
-    
+    {
+        path: '/adminanalytics',
+        component: WebsiteAnalytics,
+        name: 'adminanalytics',
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+        path: '/admincontentanalysis',
+        component: ContentAnalysisManagement,
+        name: 'admincontentanalysis',
+        meta: { requiresAuth: true, requiresAdmin: true }
+    }
 ]
 
 const router = createRouter({

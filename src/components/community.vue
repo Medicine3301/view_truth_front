@@ -158,7 +158,7 @@ const editorConfig = {
       const formData = new FormData();
       formData.append('file', blobInfo.blob(), blobInfo.filename());
       
-      const response = await axios.post('https://view-truth.zeabur.app/api/upload', formData, {
+      const response = await axios.post('http://localhost:8000/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (e) => {
           if (e.total) {
@@ -257,7 +257,7 @@ const handlePostSubmit = async () => {
 
   try {
     postLoading.value = true
-    const response = await axios.post('https://view-truth.zeabur.app/api/post/post/create', {
+    const response = await axios.post('http://localhost:8000/api/post/post/create', {
       title: postForm.title,
       cid: route.params.id,
       uid: authStore.userState.user?.uid,

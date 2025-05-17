@@ -133,6 +133,7 @@ interface news {
     analysis_timestamp: string
     created_at: string
     updated_at: string
+    Pending: string
 }
 interface RegisterUserData {
     name: string
@@ -203,18 +204,26 @@ export const useAuthStore = defineStore('auth', {
     actions: {
         async login(username: string, password: string) {
             try {
-                const response = await axios.post('https://view-truth.zeabur.app/api/login', {
+                const response = await axios.post('http://localhost:8000/api/login', {
                     username,
                     password
-                });
+                }, { withCredentials: true });  // 啟用 credentials
 
                 if (response.status === 200) {
                     this.userState.user = response.data.user;
                     this.userState.isAuthenticated = true;
                     
-                    // 同時儲存 token 和 tokens
-                    localStorage.setItem('token', response.data.access_token);
-                    this.setTokens(response.data.access_token, response.data.refresh_token);
+                    // 儲存 token 並設置 axios 預設標頭
+                    const accessToken = response.data.access_token;
+                    const refreshToken = response.data.refresh_token;
+                    
+                    console.log('登入成功: 取得 access_token', accessToken.substring(0, 10) + '...');
+                    
+                    // 確保 tokens 格式正確
+                    this.setTokens(accessToken, refreshToken);
+                    
+                    // 設置全局 axios 標頭
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
                     
                     notification.success({
                         message: '登入成功',
@@ -225,6 +234,7 @@ export const useAuthStore = defineStore('auth', {
                 }
                 return false;
             } catch (error: any) {
+                console.error('登入失敗:', error);
                 const errorMessage = error.response?.data?.error || '登入失敗，請稍後再試';
                 notification.error({
                     message: '登入失敗',
@@ -237,7 +247,7 @@ export const useAuthStore = defineStore('auth', {
 
         async register(userData: RegisterUserData) {
             try {
-                const response = await axios.post('https://view-truth.zeabur.app/api/register', userData);
+                const response = await axios.post('http://localhost:8000/api/register', userData);
 
                 if (response.status === 201) {
                     notification.success({
@@ -260,52 +270,171 @@ export const useAuthStore = defineStore('auth', {
         },
 
         logout() {
+            console.log('登出: 清除認證狀態');
+            
+            // 清除狀態
             this.userState.user = null;
             this.userState.isAuthenticated = false;
             this.tokenState.accessToken = null;
             this.tokenState.refreshToken = null;
+            
+            // 清除本地儲存
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
-            localStorage.removeItem('token'); // 新增這行
+            localStorage.removeItem('token'); // 移除舊版 token
+            
+            // 清除 axios 標頭
+            delete axios.defaults.headers.common['Authorization'];
+            
+            // 通知用戶
             notification.info({
                 message: '已登出',
                 description: '您已成功登出系統',
                 duration: 3
             });
+            
+            console.log('登出: 認證狀態已清除');
+        },
+
+        async logoutWithRequest() {
+            try {
+                // 從 localStorage 或 store 中獲取 token
+                const accessToken = this.tokenState.accessToken || localStorage.getItem('accessToken');
+                
+                if (!accessToken) {
+                    console.log('登出: 沒有找到有效的 accessToken');
+                    this.logout();
+                    return true;
+                }
+
+                // 向後端發送登出請求
+                try {
+                    const response = await axios.post('http://localhost:8000/api/logout', null, {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        withCredentials: true
+                    });
+                    
+                    if (response.status === 200) {
+                        console.log('登出: 後端登出成功');
+                    } else {
+                        console.warn('登出: 後端響應狀態碼不是 200', response.status);
+                    }
+                } catch (error: any) {
+                    // 即使後端請求失敗，仍然繼續本地登出
+                    console.error('後端登出請求失敗:', error);
+                    const status = error.response?.status;
+                    
+                    if (status) {
+                        console.warn(`登出: HTTP錯誤 ${status}`);
+                    }
+                }
+
+                // 無論後端請求成功與否，都執行本地登出
+                this.logout();
+                return true;
+            } catch (error) {
+                console.error('登出過程中發生錯誤:', error);
+                // 執行本地登出作為後備方案
+                this.logout();
+                return true;
+            }
         },
 
         async checkAuth() {
-            const token = localStorage.getItem('token') || this.tokenState.accessToken;
-            if (!token) {
+            // 從 localStorage 和 store 中獲取 token
+            const accessToken = this.tokenState.accessToken || localStorage.getItem('accessToken');
+            if (!accessToken) {
+                console.log('checkAuth: 沒有找到有效的 accessToken');
                 this.logout();
                 return false;
             }
 
+            // 設置 axios 預設標頭
+            axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+
             try {
-                const response = await axios.get('https://view-truth.zeabur.app/api/verify', {
+                // 確保明確傳遞 Authorization 頭部
+                const response = await axios.get('http://localhost:8000/api/verify', {
                     headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    withCredentials: true  // 啟用 credentials
                 });
 
                 if (response.status === 200) {
                     this.userState.user = response.data.user;
                     this.userState.isAuthenticated = true;
+                    console.log('checkAuth: 認證成功');
                     return true;
                 } else {
+                    console.warn('checkAuth: 認證響應不為 200，清除所有 token');
                     this.logout();
                     return false;
                 }
-            } catch (error) {
+            } catch (error: any) {
+                // 記錄詳細錯誤信息
+                console.error('驗證 token 失敗:', error);
+                const status = error.response?.status;
+                const data = error.response?.data;
+                
+                if (status) {
+                    console.warn(`checkAuth: HTTP錯誤 ${status}，清除所有 token`, data);
+                }
+                
+                // 不論是什麼錯誤，直接清除所有 token 並登出
                 this.logout();
                 return false;
             }
         },
+
+        // 驗證但不嘗試刷新 token（避免無限循環）
+        async verifyWithoutRefresh() {
+            try {
+                const accessToken = this.tokenState.accessToken || localStorage.getItem('accessToken');
+                if (!accessToken) {
+                    console.warn('verifyWithoutRefresh: 沒有找到有效的 accessToken');
+                    this.logout();
+                    return false;
+                }
+                
+                console.log('verifyWithoutRefresh: 使用新 token 驗證');
+                
+                const response = await axios.get('http://localhost:8000/api/verify', {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    withCredentials: true
+                });
+                
+                if (response.status === 200) {
+                    this.userState.user = response.data.user;
+                    this.userState.isAuthenticated = true;
+                    console.log('verifyWithoutRefresh: 驗證成功');
+                    return true;
+                } else {
+                    console.warn('verifyWithoutRefresh: 驗證響應不為 200');
+                }
+            } catch (error: any) {
+                console.error('二次驗證失敗:', error);
+                const status = error.response?.status;
+                const data = error.response?.data;
+                
+                if (status) {
+                    console.warn(`verifyWithoutRefresh: HTTP錯誤 ${status}`, data);
+                }
+                
+                this.logout();
+            }
+            return false;
+        },
+
         //獲取用戶列表(後台)
         async fetchUsers(params: Record<string, any>) {
             this.userManagement.loading = true;
             try {
-                const response = await axios.get('https://view-truth.zeabur.app/api/users', { params });
+                const response = await axios.get('http://localhost:8000/api/users', { params });
                 if (response.status === 200) {
                     this.userManagement.users = response.data.users;
                     this.userManagement.total = response.data.total;
@@ -333,7 +462,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async getUserInfo(uid: string) {
             try {
-                const response = await axios.get(`https://view-truth.zeabur.app/api/user/${uid}`);
+                const response = await axios.get(`http://localhost:8000/api/user/${uid}`);
                 if (response.status === 200) {
                     this.userState.otherUser = response.data.user;
                 } else {
@@ -354,7 +483,7 @@ export const useAuthStore = defineStore('auth', {
 
         async getCommunityInfo(cid: string) {
             try {
-                const response = await axios.get(`https://view-truth.zeabur.app/api/community/${cid}`);
+                const response = await axios.get(`http://localhost:8000/api/community/${cid}`);
                 if (response.status === 200) {
                     this.communityState.community = response.data.community;
                 } else {
@@ -374,7 +503,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async getAllCommunities() {
             try {
-                const response = await axios.get('https://view-truth.zeabur.app/api/community/all');
+                const response = await axios.get('http://localhost:8000/api/community/all');
                 if (response.status === 200) {
                     this.communityState.communities = response.data.communities as Community[];
                 } else {
@@ -394,7 +523,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async getPostInfo(pid: string) {
             try {
-                const response = await axios.get(`https://view-truth.zeabur.app/api/post/${pid}`);
+                const response = await axios.get(`http://localhost:8000/api/post/${pid}`);
                 if (response.status === 200) {
                     this.postState.post = response.data.post;
                 } else {
@@ -414,7 +543,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async getAllPosts(cid: string) {
             try {
-                const response = await axios.get(`https://view-truth.zeabur.app/api/posts/${cid}`);
+                const response = await axios.get(`http://localhost:8000/api/posts/${cid}`);
                 if (response.status === 200) {
                     this.postState.posts = response.data.posts as post[];
                 } else {
@@ -435,7 +564,7 @@ export const useAuthStore = defineStore('auth', {
         //獲取該user貼文
         async getuserPosts(uid: string) {
             try {
-                const response = await axios.get(`https://view-truth.zeabur.app/api/userpost/${uid}`);
+                const response = await axios.get(`http://localhost:8000/api/userpost/${uid}`);
                 if (response.status === 200) {
                     this.postState.posts = response.data.posts as post[];
                 } else {
@@ -455,7 +584,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async checkFavorite(pid: string, uid: string): Promise<boolean> {
             try {
-                const response = await axios.post('https://view-truth.zeabur.app/api/favorites/get/', {
+                const response = await axios.post('http://localhost:8000/api/favorites/get/', {
                     pid,
                     uid,
                 });
@@ -475,7 +604,7 @@ export const useAuthStore = defineStore('auth', {
         ,
         async checkScore(pid: string, uid: string): Promise<number> {
             try {
-                const response = await axios.post('https://view-truth.zeabur.app/api/scores/get/', {
+                const response = await axios.post('http://localhost:8000/api/scores/get/', {
                     pid,
                     uid,
                 });
@@ -491,7 +620,7 @@ export const useAuthStore = defineStore('auth', {
         //get user favorite
         async getuserFavorites(uid: string) {
             try {
-                const response = await axios.get(`https://view-truth.zeabur.app/api/userfavorites/${uid}`);
+                const response = await axios.get(`http://localhost:8000/api/userfavorites/${uid}`);
                 if (response.status === 200) {
                     this.postState.favorites = response.data.favorite_posts as post[]; // 修改這裡
                 } else {
@@ -514,7 +643,7 @@ export const useAuthStore = defineStore('auth', {
 
         async getAllComments(pid: string) {
             try {
-                const response = await axios.get(`https://view-truth.zeabur.app/api/comment/${pid}`);
+                const response = await axios.get(`http://localhost:8000/api/comment/${pid}`);
                 if (response.status === 200) {
                     this.postState.comments = response.data.comments as comment[];
                 } else {
@@ -535,7 +664,7 @@ export const useAuthStore = defineStore('auth', {
 
         async getAllnewsies() {
             try {
-                const response = await axios.get('https://view-truth.zeabur.app/api/news/all');
+                const response = await axios.get('http://localhost:8000/api/news/all');
                 if (response.status === 200) {
                     this.newstate.newsies = response.data.newsies as news[];
                 } else {
@@ -556,7 +685,7 @@ export const useAuthStore = defineStore('auth', {
         async getnewsInfo(nid: string) {
             try {
                 console.log('Fetching news with ID:', nid);
-                const response = await axios.get(`https://view-truth.zeabur.app/api/news/${nid}`);
+                const response = await axios.get(`http://localhost:8000/api/news/${nid}`);
                 console.log('API Response:', response);
                 if (response.status === 200) {
                     console.log('News data:', response.data.news);
@@ -581,7 +710,7 @@ export const useAuthStore = defineStore('auth', {
         //news的
         async getNewsAllComments(nid: string) {
             try {
-                const response = await axios.get(`https://view-truth.zeabur.app/api/ncomment/${nid}`);
+                const response = await axios.get(`http://localhost:8000/api/ncomment/${nid}`);
                 if (response.status === 200) {
                     this.newstate.comments = response.data.comments as comment[];
                 } else {
@@ -600,35 +729,183 @@ export const useAuthStore = defineStore('auth', {
             }
         },
         setTokens(accessToken: string, refreshToken: string) {
+            // 先檢查 token 有效性
+            if (!accessToken || typeof accessToken !== 'string') {
+                console.error('嘗試設置無效的 accessToken:', accessToken);
+                return;
+            }
+            
+            if (!refreshToken || typeof refreshToken !== 'string') {
+                console.error('嘗試設置無效的 refreshToken:', refreshToken);
+                return;
+            }
+            
+            console.log('設置 tokens, accessToken:', accessToken.substring(0, 10) + '...');
+            
+            // 更新 store
             this.tokenState.accessToken = accessToken;
             this.tokenState.refreshToken = refreshToken;
+            
+            // 更新 localStorage
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('refreshToken', refreshToken);
         },
 
         async refreshToken() {
             try {
-                const response = await axios.post('https://view-truth.zeabur.app/api/refresh', null, {
-                    headers: {
-                        Authorization: `Bearer ${this.tokenState.refreshToken}`
+                const refreshToken = this.tokenState.refreshToken || localStorage.getItem('refreshToken');
+                if (!refreshToken) {
+                    console.error('無法刷新 token: refresh token 不存在');
+                    this.logout();
+                    // 顯示友好提示訊息
+                    notification.info({
+                        message: '登入已過期',
+                        description: '請重新登入以繼續使用',
+                        duration: 3
+                    });
+                    return false;
+                }
+                
+                console.log('refreshToken: 嘗試刷新 token');
+                
+                // 嘗試兩種不同的方式發送 refresh token
+                try {
+                    // 方式一：在 header 中傳遞
+                    console.log('refreshToken: 使用 header 方式');
+                    const response = await axios.post('http://localhost:8000/api/refresh', null, {
+                        headers: {
+                            'Authorization': `Bearer ${refreshToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        withCredentials: true  // 啟用 credentials
+                    });
+                    
+                    if (response.status === 200) {
+                        const newAccessToken = response.data.access_token;
+                        const newRefreshToken = response.data.refresh_token || refreshToken;
+                        
+                        console.log('refreshToken: 成功獲取新 token');
+                        
+                        // 更新 tokens 和 axios 標頭
+                        this.setTokens(newAccessToken, newRefreshToken);
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+                        
+                        return true;
                     }
+                    console.warn('refreshToken: 響應成功但狀態碼不是 200', response.status);
+                } catch (headerError) {
+                    console.error('使用 header 方式刷新 token 失敗，嘗試請求體方式:', headerError);
+                    
+                    // 方式二：在請求體中傳遞
+                    try {
+                        console.log('refreshToken: 使用請求體方式');
+                        const bodyResponse = await axios.post('http://localhost:8000/api/refresh', 
+                            { refresh_token: refreshToken },
+                            {
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                withCredentials: true
+                            }
+                        );
+                        
+                        if (bodyResponse.status === 200) {
+                            const newAccessToken = bodyResponse.data.access_token;
+                            const newRefreshToken = bodyResponse.data.refresh_token || refreshToken;
+                            
+                            console.log('refreshToken: 使用請求體方式成功獲取新 token');
+                            
+                            // 更新 tokens 和 axios 標頭
+                            this.setTokens(newAccessToken, newRefreshToken);
+                            axios.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+                            
+                            return true;
+                        }
+                        console.warn('refreshToken: 請求體方式響應成功但狀態碼不是 200', bodyResponse.status);
+                    } catch (bodyError: any) {
+                        console.error('使用請求體方式刷新 token 也失敗:', bodyError);
+                        
+                        // 記錄詳細錯誤信息
+                        const status = bodyError.response?.status;
+                        const data = bodyError.response?.data;
+                        
+                        if (status) {
+                            console.warn(`refreshToken: HTTP錯誤 ${status}`, data);
+                            
+                            // 如果是 401 錯誤，表示 refresh token 也過期了
+                            if (status === 401) {
+                                console.warn('refreshToken: Refresh token 已過期，需要重新登入');
+                                this.logout();
+                                // 顯示友好提示訊息而不是錯誤
+                                notification.info({
+                                    message: '登入已過期',
+                                    description: '您的登入已過期，請重新登入以繼續使用',
+                                    duration: 5
+                                });
+                                
+                                // 可以選擇重定向到登入頁面
+                                if (window.location.pathname !== '/login') {
+                                    setTimeout(() => {
+                                        window.location.href = '/login';
+                                    }, 1000);
+                                }
+                                
+                                return false;
+                            }
+                        }
+                        
+                        throw bodyError; // 其他類型的錯誤，拋出錯誤
+                    }
+                }
+                
+                console.warn('refreshToken: 所有刷新嘗試失敗');
+                this.logout();
+                // 顯示友好提示訊息
+                notification.info({
+                    message: '登入已過期',
+                    description: '請重新登入以繼續使用',
+                    duration: 3
                 });
                 
-                if (response.status === 200) {
-                    this.tokenState.accessToken = response.data.access_token;
-                    localStorage.setItem('accessToken', response.data.access_token);
-                    return true;
+                // 可以選擇重定向到登入頁面
+                if (window.location.pathname !== '/login') {
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1000);
                 }
+                
                 return false;
             } catch (error) {
+                console.error('刷新 token 失敗:', error);
                 this.logout();
+                // 顯示友好提示訊息而不是錯誤
+                notification.info({
+                    message: '登入已過期',
+                    description: '請重新登入以繼續使用',
+                    duration: 3
+                });
+                
+                // 可以選擇重定向到登入頁面
+                if (window.location.pathname !== '/login') {
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1000);
+                }
+                
                 return false;
             }
         },
 
         setupAxiosInterceptors() {
+            // 避免重複添加攔截器
+            axios.interceptors.request.eject(0);
+            axios.interceptors.response.eject(0);
+            
             let isRefreshing = false;
             let failedQueue: any[] = [];
+            
+            // 標記是否已經顯示了登入過期的提示
+            let hasShownExpiredNotification = false;
 
             const processQueue = (error: any, token: string | null = null) => {
                 failedQueue.forEach(prom => {
@@ -643,8 +920,20 @@ export const useAuthStore = defineStore('auth', {
 
             axios.interceptors.request.use(
                 config => {
-                    if (this.tokenState.accessToken) {
-                        config.headers.Authorization = `Bearer ${this.tokenState.accessToken}`;
+                    // 每次請求都從 localStorage 或 store 中獲取最新的 token
+                    const token = this.tokenState.accessToken || localStorage.getItem('accessToken');
+                    if (token) {
+                        // 確保標頭格式一致
+                        config.headers.Authorization = `Bearer ${token}`;
+                        
+                        // 添加日誌以便調試
+                        const isRefreshEndpoint = config.url?.includes('/refresh');
+                        const isVerifyEndpoint = config.url?.includes('/verify');
+                        
+                        if (isRefreshEndpoint || isVerifyEndpoint) {
+                            console.log(`發送請求到 ${config.url}, Authorization:`, 
+                                `Bearer ${token.substring(0, 10)}...`);
+                        }
                     }
                     return config;
                 },
@@ -657,8 +946,42 @@ export const useAuthStore = defineStore('auth', {
                 response => response,
                 async error => {
                     const originalRequest = error.config;
+                    
+                    // 處理空的錯誤響應
+                    if (!error.response) {
+                        return Promise.reject(error);
+                    }
 
-                    if (error.response?.status === 401 && !originalRequest._retry) {
+                    // 處理 401 未授權錯誤
+                    if (error.response.status === 401 && !originalRequest._retry) {
+                        // 避免刷新頁面時若token已過期導致重複顯示通知
+                        const isInitialAuthRequest = originalRequest.url.includes('/verify');
+                        
+                        // 如果是 refresh token 請求返回 401，表示 refresh token 已過期
+                        if (originalRequest.url.includes('/refresh')) {
+                            if (!hasShownExpiredNotification) {
+                                hasShownExpiredNotification = true;
+                                console.warn('Token 刷新失敗: refresh token 已過期');
+                                
+                                // 登出並顯示友好提示
+                                this.logout();
+                                notification.info({
+                                    message: '登入已過期',
+                                    description: '您的登入階段已結束，請重新登入以繼續使用',
+                                    duration: 5
+                                });
+                                
+                                // 可以選擇重定向到登入頁面
+                                if (window.location.pathname !== '/login') {
+                                    setTimeout(() => {
+                                        window.location.href = '/login';
+                                    }, 1000);
+                                }
+                            }
+                            return Promise.reject(error);
+                        }
+                        
+                        // 如果已經在刷新過程中，將請求加入隊列
                         if (isRefreshing) {
                             return new Promise((resolve, reject) => {
                                 failedQueue.push({ resolve, reject });
@@ -675,21 +998,55 @@ export const useAuthStore = defineStore('auth', {
 
                         try {
                             const refreshed = await this.refreshToken();
+                            isRefreshing = false;
+                            
                             if (refreshed) {
+                                // 刷新成功，更新原始請求的標頭
                                 processQueue(null, this.tokenState.accessToken);
                                 originalRequest.headers.Authorization = `Bearer ${this.tokenState.accessToken}`;
                                 return axios(originalRequest);
                             } else {
-                                processQueue(new Error('Refresh failed'));
+                                // 刷新失敗，處理隊列並拒絕
+                                processQueue(new Error('刷新 token 失敗'));
+                                
+                                // 前面的 refreshToken 方法已經處理了登出和通知，這裡不需要重複
                                 return Promise.reject(error);
                             }
                         } catch (refreshError) {
-                            processQueue(refreshError);
-                            return Promise.reject(refreshError);
-                        } finally {
+                            // 刷新發生錯誤，處理隊列並拒絕
                             isRefreshing = false;
+                            processQueue(refreshError);
+                            
+                            // 不要在初始認證請求時顯示錯誤
+                            if (!isInitialAuthRequest && !hasShownExpiredNotification) {
+                                hasShownExpiredNotification = true;
+                                this.logout();
+                                notification.info({
+                                    message: '登入已過期',
+                                    description: '請重新登入以繼續使用',
+                                    duration: 4
+                                });
+                                
+                                // 可以選擇重定向到登入頁面
+                                if (window.location.pathname !== '/login') {
+                                    setTimeout(() => {
+                                        window.location.href = '/login';
+                                    }, 1000);
+                                }
+                            }
+                            
+                            return Promise.reject(refreshError);
                         }
+                    } else if (error.response.status === 403) {
+                        // 處理權限不足錯誤
+                        notification.error({
+                            message: '權限不足',
+                            description: '您沒有執行此操作的權限',
+                            duration: 3
+                        });
                     }
+                    
+                    // 其他類型的錯誤
                     return Promise.reject(error);
                 }
             );
@@ -697,7 +1054,7 @@ export const useAuthStore = defineStore('auth', {
 
         async updateUserStatus(uid: string, status: string) {
             try {
-                const response = await axios.put('https://view-truth.zeabur.app/api/user/status', {
+                const response = await axios.put('http://localhost:8000/api/user/status', {
                     uid,
                     status
                 });
@@ -728,7 +1085,7 @@ export const useAuthStore = defineStore('auth', {
 
         async batchUpdateUserStatus(uids: string[], status: string) {
             try {
-                const response = await axios.put('https://view-truth.zeabur.app/api/users/batch-status', {
+                const response = await axios.put('http://localhost:8000/api/users/batch-status', {
                     uids,
                     status
                 });
@@ -758,7 +1115,7 @@ export const useAuthStore = defineStore('auth', {
 
         async fetchUserStatistics() {
             try {
-                const response = await axios.get('https://view-truth.zeabur.app/api/users/statistics');
+                const response = await axios.get('http://localhost:8000/api/users/statistics');
                 if (response.status === 200) {
                     return response.data;
                 }
@@ -776,13 +1133,21 @@ export const useAuthStore = defineStore('auth', {
         // 獲取用戶詳情
         async getUserDetails(uid: string) {
             try {
-                const response = await axios.get(`https://view-truth.zeabur.app/api/user/${uid}`);
+                const response = await axios.get(`http://localhost:8000/api/user/${uid}`);
+                console.log('API 回傳的用戶詳情:', response.data);
                 if (response.status === 200) {
-                    this.userManagement.selectedUser = response.data.user;
+                    // 保留原有的 selectedUser 中的 status
+                    const currentStatus = this.userManagement.selectedUser?.status;
+                    const userData = response.data.user;
+                    this.userManagement.selectedUser = {
+                        ...userData,
+                        status: currentStatus || userData.status || 'normal' // 優先使用現有狀態
+                    };
                     return response.data.user;
                 }
                 throw new Error('Failed to fetch user details');
             } catch (error: any) {
+                console.error('獲取用戶詳情錯誤:', error.response || error);
                 notification.error({
                     message: '獲取用戶詳情失敗',
                     description: error.response?.data?.error || '請稍後再試',
@@ -795,7 +1160,7 @@ export const useAuthStore = defineStore('auth', {
         // 重置用戶密碼
         async resetUserPassword(uid: string) {
             try {
-                const response = await axios.post(`https://view-truth.zeabur.app/api/user/reset-password`, { uid });
+                const response = await axios.post(`http://localhost:8000/api/user/reset-password`, { uid });
                 if (response.status === 200) {
                     notification.success({
                         message: '密碼重置成功',
@@ -818,7 +1183,7 @@ export const useAuthStore = defineStore('auth', {
         // 更新用戶資料
         async updateUserInfo(uid: string, userData: any) {
             try {
-                const response = await axios.put(`https://view-truth.zeabur.app/api/user/${uid}`, userData);
+                const response = await axios.put(`http://localhost:8000/api/user/${uid}`, userData);
                 if (response.status === 200) {
                     notification.success({
                         message: '更新成功',
@@ -841,7 +1206,7 @@ export const useAuthStore = defineStore('auth', {
         // 提交檢舉
         async submitReport(reportData: { uid: string; report_reason: string; pid?: string | null; comm_id?: string | any }) {
             try {
-                const response = await axios.post('https://view-truth.zeabur.app/api/report/create', reportData);
+                const response = await axios.post('http://localhost:8000/api/report/create', reportData);
                 
                 if (response.status === 201) {
                     notification.success({
@@ -865,7 +1230,7 @@ export const useAuthStore = defineStore('auth', {
         // 忘記密碼
         async forgotPassword(email: string) {
             try {
-                const response = await axios.post(`https://view-truth.zeabur.app/api/forgot-password`, { email });
+                const response = await axios.post(`http://localhost:8000/api/forgot-password`, { email });
                 if (response.status === 200) {
                     notification.success({
                         message: '密碼重置成功',
@@ -881,6 +1246,49 @@ export const useAuthStore = defineStore('auth', {
                     description: error.response?.data?.error || '請稍後再試',
                     duration: 3
                 });
+                return false;
+            }
+        },
+
+        // 初始化認證狀態
+        async initAuth() {
+            // 從 localStorage 或 store 中獲取 token
+            const accessToken = this.tokenState.accessToken || localStorage.getItem('accessToken');
+            
+            // 如果沒有 token，直接返回
+            if (!accessToken) {
+                console.log('initAuth: 沒有找到 token，不需要驗證');
+                return false;
+            }
+            
+            // 簡單驗證 token 格式是否合理
+            try {
+                // JWT 格式為 xxx.yyy.zzz
+                if (!accessToken.includes('.') || accessToken.split('.').length !== 3) {
+                    console.warn('initAuth: token 格式不正確，清除無效 token');
+                    this.logout();
+                    return false;
+                }
+                
+                // 設置 axios 預設標頭
+                axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+                console.log('初始化認證: 設置 Authorization 頭部', `Bearer ${accessToken.substring(0, 10)}...`);
+                
+                // 設置攔截器
+                this.setupAxiosInterceptors();
+                
+                // 嘗試靜默驗證 token 有效性
+                try {
+                    return await this.checkAuth();
+                } catch (error) {
+                    // 驗證失敗但不顯示錯誤，只是確保登出
+                    console.warn('initAuth: token 驗證失敗，清除無效 token');
+                    this.logout();
+                    return false;
+                }
+            } catch (error) {
+                console.error('初始化認證失敗:', error);
+                this.logout();
                 return false;
             }
         }

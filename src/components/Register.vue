@@ -190,7 +190,7 @@ const rules: Record<string, Rule[]> = {
 // 新增的函數，用於發送驗證碼
 const sendVerificationCode = async () => {
     try {
-        const response = await axios.post('https://view-truth.zeabur.app/api/send_verification_code', { email: formState.email });
+        const response = await axios.post('http://localhost:8000/api/send_verification_code', { email: formState.email });
         if (response.status === 200) {
             alert('驗證碼已發送');
         } else {

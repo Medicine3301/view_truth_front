@@ -17,8 +17,10 @@
       <!-- 僅管理員可見的菜單 -->
       <a-menu-item-group v-if="isAdmin" key="gadmin" title="管理面板" style="margin-top: 20px;">
         <a-menu-item key="adminPanel1">
-          <PieChartOutlined />
-          <span class="nav-text">網站數據管理</span>
+          <router-link to="/adminanalytics">
+            <PieChartOutlined />
+            <span class="nav-text">網站數據管理</span>
+          </router-link>
         </a-menu-item>
         <a-menu-item key="adminPanel2">
           <router-link to="/adminusermanagement">
@@ -27,8 +29,10 @@
           </router-link>
         </a-menu-item>
         <a-menu-item key="adminPanel3">
-          <VideoCameraOutlined />
-          <span class="nav-text">分析內容管理</span>
+          <router-link to="/admincontentanalysis">
+            <FileTextOutlined />
+            <span class="nav-text">分析內容管理</span>
+          </router-link>
         </a-menu-item>
       </a-menu-item-group>
       <a-menu-item-group key="g1" title="討論看板" style="margin-top: 20px;"
@@ -51,7 +55,7 @@
 </template>
 <script lang="ts" setup>
 import { computed, ref, onMounted, watch } from 'vue';
-import { UserOutlined, VideoCameraOutlined, FireOutlined, NotificationOutlined } from '@ant-design/icons-vue';
+import { UserOutlined, VideoCameraOutlined, FireOutlined, PieChartOutlined, FileTextOutlined, HomeOutlined } from '@ant-design/icons-vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { defineProps } from 'vue';

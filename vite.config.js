@@ -6,7 +6,7 @@ import { dirname } from 'path'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 export default defineConfig({
-  base:'./view_truth_front/',
+  base:'./view-truth_front/',
   plugins: [vue()],
   server: {
     port: 3000,

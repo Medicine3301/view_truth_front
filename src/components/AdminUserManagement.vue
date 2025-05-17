@@ -166,9 +166,12 @@
                 {{ authStore.userManagement.selectedUser.role === 'admin' ? '管理員' : '一般用戶' }}
               </a-descriptions-item>
               <a-descriptions-item label="狀態" :span="3">
-                <a-tag :color="authStore.userManagement.selectedUser?.status === 'banned' ? 'red' : 'green'">
-                  {{ authStore.userManagement.selectedUser?.status === 'banned' ? '已封禁' : '正常' }}
+                <a-tag :color="authStore.userManagement.selectedUser.status === 'banned' ? 'red' : 'green'">
+                  {{ authStore.userManagement.selectedUser.status === 'banned' ? '已封禁' : '正常' }}
                 </a-tag>
+                <span style="margin-left: 8px; color: #999;">
+                  (狀態值: {{ authStore.userManagement.selectedUser.status }})
+                </span>
               </a-descriptions-item>
               <a-descriptions-item label="註冊時間" :span="3">
                 {{ formatDate(authStore.userManagement.selectedUser.reg_date) }}
@@ -368,10 +371,20 @@ const loadUsers = async () => {
 // 載入統計數據
 const loadStatistics = async () => {
   try {
-    const data = await authStore.fetchUserStatistics();
-    statistics.value = data;
+    const response = await authStore.fetchUserStatistics();
+    console.log('統計數據回應:', response);
+    if (response) {
+      statistics.value = {
+        totalUsers: response.total_users || 0,
+        monthlyNewUsers: response.monthly_new_users || 0,
+        pendingReports: response.pending_reports || 0,
+        todayActiveUsers: response.today_active_users || 0
+      };
+      console.log('處理後的統計數據:', statistics.value);
+    }
   } catch (error) {
-    message.error('加載統計數據失敗');
+    console.error('載入統計數據錯誤:', error);
+    message.error('載入統計數據失敗');
   }
 };
 
@@ -403,9 +416,16 @@ const onSelectChange = (keys: string[]) => {
 // 打開用戶詳情抽屜
 const openUserDrawer = async (user: any) => {
   try {
+    console.log('開啟抽屜前的用戶狀態:', user.status);
     await authStore.getUserDetails(user.uid);
+    // 確保將列表中的狀態傳遞給詳情
+    if (authStore.userManagement.selectedUser) {
+      authStore.userManagement.selectedUser.status = user.status;
+    }
+    console.log('獲取詳情後的用戶資料:', authStore.userManagement.selectedUser);
     drawerVisible.value = true;
   } catch (error) {
+    console.error('獲取用戶詳情錯誤:', error);
     message.error('獲取用戶詳情失敗');
   }
 };
@@ -421,8 +441,12 @@ const toggleUserStatus = async (user: any) => {
   try {
     actionLoading.value = user.uid;
     const newStatus = user.status === 'banned' ? 'normal' : 'banned';
-    await authStore.updateUserStatus(user.uid, newStatus);
-    message.success(`用戶狀態已更新為${newStatus === 'banned' ? '已封禁' : '正常'}`);
+    const success = await authStore.updateUserStatus(user.uid, newStatus);
+    if (success) {
+      // 重新獲取用戶詳情以確保資料同步
+      await authStore.getUserDetails(user.uid);
+      message.success(`用戶狀態已更新為${newStatus === 'banned' ? '已封禁' : '正常'}`);
+    }
   } catch (error) {
     message.error('操作失敗');
   } finally {
@@ -475,9 +499,15 @@ const editUserInfo = () => {
 const handleEditSubmit = async () => {
   if (!authStore.userManagement.selectedUser) return;
   try {
-    await authStore.updateUserInfo(authStore.userManagement.selectedUser.uid, editForm.value);
-    editModalVisible.value = false;
-    loadUsers();
+    const success = await authStore.updateUserInfo(authStore.userManagement.selectedUser.uid, editForm.value);
+    if (success) {
+      editModalVisible.value = false;
+      // 重新載入用戶詳情
+      await authStore.getUserDetails(authStore.userManagement.selectedUser.uid);
+      // 重新載入用戶列表
+      await loadUsers();
+      message.success('更新成功');
+    }
   } catch (error) {
     message.error('更新失敗');
   }

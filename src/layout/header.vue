@@ -136,7 +136,7 @@ const forgotPasswordForm = reactive({
 const countdown = ref<number>(0);
 const buttonText = computed(() => countdown.value > 0 ? `請等待 ${countdown.value} 秒` : '發送臨時密碼');
 const isButtonDisabled = computed(() => countdown.value > 0);
-let timer: NodeJS.Timeout | null = null;
+let timer: ReturnType<typeof setTimeout> | null = null;
 
 // 顯示登入視窗
 const showLoginModal = () => {
@@ -204,7 +204,7 @@ const handleForgotPasswordSubmit = async () => {
 
 // 處理登出
 const handleLogout = () => {
-    authStore.logout();
+    authStore.logoutWithRequest();
     router.push('/');
 };
 

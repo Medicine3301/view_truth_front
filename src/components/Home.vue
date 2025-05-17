@@ -387,6 +387,14 @@ const formatDate = (date: string | null): string => {
 const filteredNews = computed(() => {
     let filtered = newsies.value;
 
+    // 首先根據 pending 狀態進行過濾
+    filtered = filtered.filter(news => {
+        // 輸出日誌，顯示新聞ID和其 Pending 狀態
+        console.log(`新聞 ID: ${news.nid}, Pending 狀態: ${news.Pending}`);
+        // 根據 auth.ts 中的定義，Pending 是字串類型
+        return news.Pending === "1";
+    });
+
     // 關鍵字搜尋
     if (searchText.value) {
         const searchLower = searchText.value.toLowerCase();
@@ -464,7 +472,7 @@ const loadMoreNews = async () => {
 const goToNewspage = async (newsId: string) => {
     try {
         // 增加點擊數
-        await fetch(`https://view-truth.zeabur.app/api/news/increment-count/${newsId}`, {
+        await fetch(`http://localhost:8000/api/news/increment-count/${newsId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'

@@ -258,7 +258,7 @@ const editorConfig = {
         const formData = new FormData();
         formData.append('file', blobInfo.blob(), blobInfo.filename());
 
-        const response = await axios.post('https://view-truth.zeabur.app/api/upload', formData, {
+        const response = await axios.post('http://localhost:8000/api/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             onUploadProgress: (e) => {
                 if (e.total) {
@@ -404,7 +404,7 @@ const handleEditSubmit = async () => {
       ]
     });
 
-    const response = await axios.put(`https://view-truth.zeabur.app/api/post/update/${route.params.id}`, {
+    const response = await axios.put(`http://localhost:8000/api/post/update/${route.params.id}`, {
       title: editForm.title,
       content: sanitizedContent,
     });
@@ -440,7 +440,7 @@ const handleCommentSubmit = async () => {
 
   submitting.value = true;
   try {
-    const response = await axios.post('https://view-truth.zeabur.app/api/post/comment/create', {
+    const response = await axios.post('http://localhost:8000/api/post/comment/create', {
       uid: postStore.userState.user?.uid,
       una: postStore.userState.user?.una,
       pid: route.params.id,
@@ -488,7 +488,7 @@ const Rate_sc_btn = async () => {
     onOk: async () => {
       try {
         // 發送評分請求
-        await axios.post('https://view-truth.zeabur.app/api/score/add', {
+        await axios.post('http://localhost:8000/api/score/add', {
           uid: postStore.userState.user?.uid,
           pid: route.params.id,
           score: rate_sc.value,
@@ -515,14 +515,14 @@ const toggleFavorite = async () => {
 
   try {
     if (!isFavorited.value) {  // 未收藏狀態，執行新增收藏
-      await axios.post('https://view-truth.zeabur.app/api/favorites/add', {
+      await axios.post('http://localhost:8000/api/favorites/add', {
         uid: postStore.userState.user?.uid,
         pid: route.params.id,
       });
       isFavorited.value = true;  // 更新狀態為已收藏
       message.success('已收藏');
     } else {  // 已收藏狀態，執行取消收藏
-      await axios.delete('https://view-truth.zeabur.app/api/favorites/remove', {
+      await axios.delete('http://localhost:8000/api/favorites/remove', {
         data: {
           uid: postStore.userState.user?.uid,
           pid: route.params.id,
@@ -635,7 +635,7 @@ const CommentTree = defineComponent({
 
       submitting.value[comment.comm_id] = true;
       try {
-        await axios.post('https://view-truth.zeabur.app/api/post/comment/create', {
+        await axios.post('http://localhost:8000/api/post/comment/create', {
           uid: postStore.userState.user?.uid,
           una: postStore.userState.user?.una,
           pid: route.params.id,
@@ -680,7 +680,7 @@ const submitReply = async (comment) => {
   }
 
   try {
-    await axios.post('https://view-truth.zeabur.app/api/post/comment/create', {
+    await axios.post('http://localhost:8000/api/post/comment/create', {
       uid: postStore.userState.user?.uid,
       una: postStore.userState.user?.una,
       pid: route.params.id,
