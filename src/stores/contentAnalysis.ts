@@ -68,7 +68,7 @@ export const useContentAnalysisStore = defineStore('contentAnalysis', {
       this.error = null;
 
       try {
-        const response = await axios.get('http://localhost:8000/api/content-analysis', {
+        const response = await axios.get('https://realeye.zeabur.app/api/content-analysis', {
           params
         });
 
@@ -102,7 +102,7 @@ export const useContentAnalysisStore = defineStore('contentAnalysis', {
       this.error = null;
 
       try {
-        const response = await axios.get(`http://localhost:8000/api/content-analysis/${nid}`);
+        const response = await axios.get(`https://realeye.zeabur.app/api/content-analysis/${nid}`);
 
         if (response.status === 200) {
           let detailData = response.data;
@@ -144,7 +144,7 @@ export const useContentAnalysisStore = defineStore('contentAnalysis', {
       this.error = null;
 
       try {
-        const response = await axios.patch(`http://localhost:8000/api/content-analysis/${params.nid}/status`, {
+        const response = await axios.patch(`https://realeye.zeabur.app/api/content-analysis/${params.nid}/status`, {
           pending: params.pending,
           reject_reason: params.rejectReason
         });
@@ -191,7 +191,7 @@ export const useContentAnalysisStore = defineStore('contentAnalysis', {
       this.error = null;
 
       try {
-        const response = await axios.patch('http://localhost:8000/api/content-analysis/batch-status', {
+        const response = await axios.patch('https://realeye.zeabur.app/api/content-analysis/batch-status', {
           nids: params.nids,
           pending: params.pending
         });
@@ -232,7 +232,7 @@ export const useContentAnalysisStore = defineStore('contentAnalysis', {
       this.error = null;
 
       try {
-        const response = await axios.delete(`http://localhost:8000/api/content-analysis/${nid}`);
+        const response = await axios.delete(`https://realeye.zeabur.app/api/content-analysis/${nid}`);
 
         if (response.status === 200) {
           notification.success({
@@ -270,7 +270,7 @@ export const useContentAnalysisStore = defineStore('contentAnalysis', {
       this.error = null;
 
       try {
-        const response = await axios.get('http://localhost:8000/api/content-analysis/statistics');
+        const response = await axios.get('https://realeye.zeabur.app/api/content-analysis/statistics');
 
         if (response.status === 200) {
           return response.data;

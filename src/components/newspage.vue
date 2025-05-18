@@ -584,7 +584,7 @@
   
     submitting.value = true;
     try {
-      const response = await axios.post('http://localhost:8000/api/news/comment/create', {
+      const response = await axios.post('https://realeye.zeabur.app/api/news/comment/create', {
         uid: newsStore.userState.user?.uid,
         una: newsStore.userState.user?.una,
         nid: route.params.id,
@@ -698,7 +698,7 @@
   
         submitting.value[comment.comm_id] = true;
         try {
-          await axios.post('http://localhost:8000/api/news/comment/create', {
+          await axios.post('https://realeye.zeabur.app/api/news/comment/create', {
             uid: newsStore.userState.user?.uid,
             una: newsStore.userState.user?.una,
             nid: route.params.id,
@@ -748,7 +748,7 @@
     }
   
     try {
-      await axios.post('http://localhost:8000/api/news/comment/create', {
+      await axios.post('https://realeye.zeabur.app/api/news/comment/create', {
         uid: newsStore.userState.user?.uid,
         una: newsStore.userState.user?.una,
         nid: route.params.id,

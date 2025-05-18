@@ -472,7 +472,7 @@ const loadMoreNews = async () => {
 const goToNewspage = async (newsId: string) => {
     try {
         // 增加點擊數
-        await fetch(`http://localhost:8000/api/news/increment-count/${newsId}`, {
+        await fetch(`https://realeye.zeabur.app/api/news/increment-count/${newsId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'

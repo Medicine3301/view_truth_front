@@ -309,7 +309,7 @@ const saveChanges = async () => {
     };
 
     // 呼叫 API 更新用戶資料
-    const response = await axios.put(`http://localhost:8000/api/user/${route.params.id}`, updatedData);
+    const response = await axios.put(`https://realeye.zeabur.app/api/user/${route.params.id}`, updatedData);
 
     if (response.status === 200) {
       message.success('資料更新成功');
@@ -503,7 +503,7 @@ const handlePasswordChange = async () => {
     passwordLoading.value = true;
 
     // 呼叫 API 更新密碼
-    const response = await axios.put(`http://localhost:8000/api/user/${route.params.id}/password`, {
+    const response = await axios.put(`https://realeye.zeabur.app/api/user/${route.params.id}/password`, {
       currentPassword: passwordForm.value.currentPassword,
       newPassword: passwordForm.value.newPassword
     });

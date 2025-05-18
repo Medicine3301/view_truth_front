@@ -134,7 +134,7 @@ export const useAnalyticsStore = defineStore('analytics', {
       this.error = null;
 
       try {
-        const response = await axios.get<ApiOverviewResponse>('http://localhost:8000/api/analytics/overview', {
+        const response = await axios.get<ApiOverviewResponse>('https://realeye.zeabur.app/api/analytics/overview', {
           params
         });
 
@@ -196,7 +196,7 @@ export const useAnalyticsStore = defineStore('analytics', {
     // 獲取即時訪問數據
     async fetchRealtimeData() {
       try {
-        const response = await axios.get<ApiRealtimeResponse>('http://localhost:8000/api/analytics/realtime');
+        const response = await axios.get<ApiRealtimeResponse>('https://realeye.zeabur.app/api/analytics/realtime');
         
         if (response.status === 200) {
           const data = response.data;
@@ -228,7 +228,7 @@ export const useAnalyticsStore = defineStore('analytics', {
       metrics: string[];
     }) {
       try {
-        const response = await axios.get<ApiCustomResponse>('http://localhost:8000/api/analytics/custom', {
+        const response = await axios.get<ApiCustomResponse>('https://realeye.zeabur.app/api/analytics/custom', {
           params
         });
 
@@ -253,7 +253,7 @@ export const useAnalyticsStore = defineStore('analytics', {
       format: 'pdf' | 'excel';
     }) {
       try {
-        const response = await axios.get('http://localhost:8000/api/analytics/export', {
+        const response = await axios.get('https://realeye.zeabur.app/api/analytics/export', {
           params,
           responseType: 'blob'
         });

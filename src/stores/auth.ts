@@ -204,7 +204,7 @@ export const useAuthStore = defineStore('auth', {
     actions: {
         async login(username: string, password: string) {
             try {
-                const response = await axios.post('http://localhost:8000/api/login', {
+                const response = await axios.post('https://realeye.zeabur.app/api/login', {
                     username,
                     password
                 }, { withCredentials: true });  // 啟用 credentials
@@ -247,7 +247,7 @@ export const useAuthStore = defineStore('auth', {
 
         async register(userData: RegisterUserData) {
             try {
-                const response = await axios.post('http://localhost:8000/api/register', userData);
+                const response = await axios.post('https://realeye.zeabur.app/api/register', userData);
 
                 if (response.status === 201) {
                     notification.success({
@@ -309,7 +309,7 @@ export const useAuthStore = defineStore('auth', {
 
                 // 向後端發送登出請求
                 try {
-                    const response = await axios.post('http://localhost:8000/api/logout', null, {
+                    const response = await axios.post('https://realeye.zeabur.app/api/logout', null, {
                         headers: {
                             'Authorization': `Bearer ${accessToken}`
                         },
@@ -356,7 +356,7 @@ export const useAuthStore = defineStore('auth', {
 
             try {
                 // 確保明確傳遞 Authorization 頭部
-                const response = await axios.get('http://localhost:8000/api/verify', {
+                const response = await axios.get('https://realeye.zeabur.app/api/verify', {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`
                     },
@@ -401,7 +401,7 @@ export const useAuthStore = defineStore('auth', {
                 
                 console.log('verifyWithoutRefresh: 使用新 token 驗證');
                 
-                const response = await axios.get('http://localhost:8000/api/verify', {
+                const response = await axios.get('https://realeye.zeabur.app/api/verify', {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`
                     },
@@ -434,7 +434,7 @@ export const useAuthStore = defineStore('auth', {
         async fetchUsers(params: Record<string, any>) {
             this.userManagement.loading = true;
             try {
-                const response = await axios.get('http://localhost:8000/api/users', { params });
+                const response = await axios.get('https://realeye.zeabur.app/api/users', { params });
                 if (response.status === 200) {
                     this.userManagement.users = response.data.users;
                     this.userManagement.total = response.data.total;
@@ -462,7 +462,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async getUserInfo(uid: string) {
             try {
-                const response = await axios.get(`http://localhost:8000/api/user/${uid}`);
+                const response = await axios.get(`https://realeye.zeabur.app/api/user/${uid}`);
                 if (response.status === 200) {
                     this.userState.otherUser = response.data.user;
                 } else {
@@ -483,7 +483,7 @@ export const useAuthStore = defineStore('auth', {
 
         async getCommunityInfo(cid: string) {
             try {
-                const response = await axios.get(`http://localhost:8000/api/community/${cid}`);
+                const response = await axios.get(`https://realeye.zeabur.app/api/community/${cid}`);
                 if (response.status === 200) {
                     this.communityState.community = response.data.community;
                 } else {
@@ -503,7 +503,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async getAllCommunities() {
             try {
-                const response = await axios.get('http://localhost:8000/api/community/all');
+                const response = await axios.get('https://realeye.zeabur.app/api/community/all');
                 if (response.status === 200) {
                     this.communityState.communities = response.data.communities as Community[];
                 } else {
@@ -523,7 +523,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async getPostInfo(pid: string) {
             try {
-                const response = await axios.get(`http://localhost:8000/api/post/${pid}`);
+                const response = await axios.get(`https://realeye.zeabur.app/api/post/${pid}`);
                 if (response.status === 200) {
                     this.postState.post = response.data.post;
                 } else {
@@ -543,7 +543,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async getAllPosts(cid: string) {
             try {
-                const response = await axios.get(`http://localhost:8000/api/posts/${cid}`);
+                const response = await axios.get(`https://realeye.zeabur.app/api/posts/${cid}`);
                 if (response.status === 200) {
                     this.postState.posts = response.data.posts as post[];
                 } else {
@@ -564,7 +564,7 @@ export const useAuthStore = defineStore('auth', {
         //獲取該user貼文
         async getuserPosts(uid: string) {
             try {
-                const response = await axios.get(`http://localhost:8000/api/userpost/${uid}`);
+                const response = await axios.get(`https://realeye.zeabur.app/api/userpost/${uid}`);
                 if (response.status === 200) {
                     this.postState.posts = response.data.posts as post[];
                 } else {
@@ -584,7 +584,7 @@ export const useAuthStore = defineStore('auth', {
         },
         async checkFavorite(pid: string, uid: string): Promise<boolean> {
             try {
-                const response = await axios.post('http://localhost:8000/api/favorites/get/', {
+                const response = await axios.post('https://realeye.zeabur.app/api/favorites/get/', {
                     pid,
                     uid,
                 });
@@ -604,7 +604,7 @@ export const useAuthStore = defineStore('auth', {
         ,
         async checkScore(pid: string, uid: string): Promise<number> {
             try {
-                const response = await axios.post('http://localhost:8000/api/scores/get/', {
+                const response = await axios.post('https://realeye.zeabur.app/api/scores/get/', {
                     pid,
                     uid,
                 });
@@ -620,7 +620,7 @@ export const useAuthStore = defineStore('auth', {
         //get user favorite
         async getuserFavorites(uid: string) {
             try {
-                const response = await axios.get(`http://localhost:8000/api/userfavorites/${uid}`);
+                const response = await axios.get(`https://realeye.zeabur.app/api/userfavorites/${uid}`);
                 if (response.status === 200) {
                     this.postState.favorites = response.data.favorite_posts as post[]; // 修改這裡
                 } else {
@@ -643,7 +643,7 @@ export const useAuthStore = defineStore('auth', {
 
         async getAllComments(pid: string) {
             try {
-                const response = await axios.get(`http://localhost:8000/api/comment/${pid}`);
+                const response = await axios.get(`https://realeye.zeabur.app/api/comment/${pid}`);
                 if (response.status === 200) {
                     this.postState.comments = response.data.comments as comment[];
                 } else {
@@ -664,7 +664,7 @@ export const useAuthStore = defineStore('auth', {
 
         async getAllnewsies() {
             try {
-                const response = await axios.get('http://localhost:8000/api/news/all');
+                const response = await axios.get('https://realeye.zeabur.app/api/news/all');
                 if (response.status === 200) {
                     this.newstate.newsies = response.data.newsies as news[];
                 } else {
@@ -685,7 +685,7 @@ export const useAuthStore = defineStore('auth', {
         async getnewsInfo(nid: string) {
             try {
                 console.log('Fetching news with ID:', nid);
-                const response = await axios.get(`http://localhost:8000/api/news/${nid}`);
+                const response = await axios.get(`https://realeye.zeabur.app/api/news/${nid}`);
                 console.log('API Response:', response);
                 if (response.status === 200) {
                     console.log('News data:', response.data.news);
@@ -710,7 +710,7 @@ export const useAuthStore = defineStore('auth', {
         //news的
         async getNewsAllComments(nid: string) {
             try {
-                const response = await axios.get(`http://localhost:8000/api/ncomment/${nid}`);
+                const response = await axios.get(`https://realeye.zeabur.app/api/ncomment/${nid}`);
                 if (response.status === 200) {
                     this.newstate.comments = response.data.comments as comment[];
                 } else {
@@ -772,7 +772,7 @@ export const useAuthStore = defineStore('auth', {
                 try {
                     // 方式一：在 header 中傳遞
                     console.log('refreshToken: 使用 header 方式');
-                    const response = await axios.post('http://localhost:8000/api/refresh', null, {
+                    const response = await axios.post('https://realeye.zeabur.app/api/refresh', null, {
                         headers: {
                             'Authorization': `Bearer ${refreshToken}`,
                             'Content-Type': 'application/json'
@@ -799,7 +799,7 @@ export const useAuthStore = defineStore('auth', {
                     // 方式二：在請求體中傳遞
                     try {
                         console.log('refreshToken: 使用請求體方式');
-                        const bodyResponse = await axios.post('http://localhost:8000/api/refresh', 
+                        const bodyResponse = await axios.post('https://realeye.zeabur.app/api/refresh', 
                             { refresh_token: refreshToken },
                             {
                                 headers: {
@@ -1054,7 +1054,7 @@ export const useAuthStore = defineStore('auth', {
 
         async updateUserStatus(uid: string, status: string) {
             try {
-                const response = await axios.put('http://localhost:8000/api/user/status', {
+                const response = await axios.put('https://realeye.zeabur.app/api/user/status', {
                     uid,
                     status
                 });
@@ -1085,7 +1085,7 @@ export const useAuthStore = defineStore('auth', {
 
         async batchUpdateUserStatus(uids: string[], status: string) {
             try {
-                const response = await axios.put('http://localhost:8000/api/users/batch-status', {
+                const response = await axios.put('https://realeye.zeabur.app/api/users/batch-status', {
                     uids,
                     status
                 });
@@ -1115,7 +1115,7 @@ export const useAuthStore = defineStore('auth', {
 
         async fetchUserStatistics() {
             try {
-                const response = await axios.get('http://localhost:8000/api/users/statistics');
+                const response = await axios.get('https://realeye.zeabur.app/api/users/statistics');
                 if (response.status === 200) {
                     return response.data;
                 }
@@ -1133,7 +1133,7 @@ export const useAuthStore = defineStore('auth', {
         // 獲取用戶詳情
         async getUserDetails(uid: string) {
             try {
-                const response = await axios.get(`http://localhost:8000/api/user/${uid}`);
+                const response = await axios.get(`https://realeye.zeabur.app/api/user/${uid}`);
                 console.log('API 回傳的用戶詳情:', response.data);
                 if (response.status === 200) {
                     // 保留原有的 selectedUser 中的 status
@@ -1160,7 +1160,7 @@ export const useAuthStore = defineStore('auth', {
         // 重置用戶密碼
         async resetUserPassword(uid: string) {
             try {
-                const response = await axios.post(`http://localhost:8000/api/user/reset-password`, { uid });
+                const response = await axios.post(`https://realeye.zeabur.app/api/user/reset-password`, { uid });
                 if (response.status === 200) {
                     notification.success({
                         message: '密碼重置成功',
@@ -1183,7 +1183,7 @@ export const useAuthStore = defineStore('auth', {
         // 更新用戶資料
         async updateUserInfo(uid: string, userData: any) {
             try {
-                const response = await axios.put(`http://localhost:8000/api/user/${uid}`, userData);
+                const response = await axios.put(`https://realeye.zeabur.app/api/user/${uid}`, userData);
                 if (response.status === 200) {
                     notification.success({
                         message: '更新成功',
@@ -1206,7 +1206,7 @@ export const useAuthStore = defineStore('auth', {
         // 提交檢舉
         async submitReport(reportData: { uid: string; report_reason: string; pid?: string | null; comm_id?: string | any }) {
             try {
-                const response = await axios.post('http://localhost:8000/api/report/create', reportData);
+                const response = await axios.post('https://realeye.zeabur.app/api/report/create', reportData);
                 
                 if (response.status === 201) {
                     notification.success({
@@ -1230,7 +1230,7 @@ export const useAuthStore = defineStore('auth', {
         // 忘記密碼
         async forgotPassword(email: string) {
             try {
-                const response = await axios.post(`http://localhost:8000/api/forgot-password`, { email });
+                const response = await axios.post(`https://realeye.zeabur.app/api/forgot-password`, { email });
                 if (response.status === 200) {
                     notification.success({
                         message: '密碼重置成功',
