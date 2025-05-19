@@ -589,19 +589,36 @@ export const useAuthStore = defineStore('auth', {
                     uid,
                 });
 
-                console.log('獲取收藏狀態成功:', response.data);
+                console.log('獲取收藏狀態成功 (checkFavorite API response):', response.data); // 更明確的日誌
 
-                // 檢查 response.data 中的實際收藏狀態
-                // 根據你的 API 返回數據結構來判斷
-                // 例如：response.data.isFavorited 或 response.data.exists 等
-                return response.data.isFavorited || response.data.exists || false;
+                // 檢查各種可能的布爾指標
+                if (response.data && typeof response.data.isFavorited === 'boolean') {
+                    return response.data.isFavorited;
+                }
+                if (response.data && typeof response.data.favorited === 'boolean') {
+                    return response.data.favorited;
+                }
+                if (response.data && typeof response.data.exists === 'boolean') {
+                    return response.data.exists;
+                }
+                // 新增對 snake_case 版本的檢查，因為這很常見
+                if (response.data && typeof response.data.is_favorited === 'boolean') {
+                    return response.data.is_favorited;
+                }
+
+                console.warn('checkFavorite: 無法從已知欄位 (isFavorited, favorited, exists, is_favorited) 判斷收藏狀態。預設為 false。回應資料:', response.data);
+                return false; // 如果找不到明確的 true 指標，則預設為 false
 
             } catch (error: any) {
-                console.error('獲取收藏狀態失敗:', error);
-                return false;
+                // 如果有錯誤回應，則記錄下來
+                if (error.response) {
+                    console.error('獲取收藏狀態失敗 (checkFavorite API error):', error.response.status, error.response.data);
+                } else {
+                    console.error('獲取收藏狀態失敗 (checkFavorite network/other error):', error.message);
+                }
+                return false; // 發生錯誤時，假設未收藏
             }
-        }
-        ,
+        },
         async checkScore(pid: string, uid: string): Promise<number> {
             try {
                 const response = await axios.post('https://realeye.zeabur.app/api/scores/get/', {

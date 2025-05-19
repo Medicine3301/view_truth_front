@@ -538,17 +538,19 @@ const toggleFavorite = async () => {
 };
 onMounted(async () => {
   const postId = route.params.id as string;
-  const uid = postStore.userState.user?.uid as string;
+  // 將 uid 的獲取延後到確認用戶已認證之後
   if (postId) {
     await loadPostData(postId);
   }
   // 檢查收藏狀態
-  if (postStore.userState.isAuthenticated) {
+  if (postStore.userState.isAuthenticated && postStore.userState.user?.uid) { // 確保 uid 存在
+    const uid = postStore.userState.user.uid; // 在這裡獲取 uid
     const checkFavorite = await postStore.checkFavorite(postId, uid);
     isFavorited.value = checkFavorite;
   }
   //檢查評分
-  if (postStore.userState.isAuthenticated) {
+  if (postStore.userState.isAuthenticated && postStore.userState.user?.uid) { // 確保 uid 存在
+    const uid = postStore.userState.user.uid; // 在這裡獲取 uid
     const checkScore = await postStore.checkScore(postId, uid);
     rate_sc.value = checkScore;
   }
